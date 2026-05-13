@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from project.databaseconn import Base, engine, get_db
 
 app = FastAPI(title="My Crochet Tracker")
+template = Jinja2Templates(directory="project//templates")
 
 
 class DB_Project(Base):  # database model
@@ -25,25 +26,17 @@ class Project(BaseModel):  # pydantic model for api and db
     yarn_type: str
 
 
-projects: list[dict] = [
-    {"p_id": 1, "p_name": "star blanket", "yarn_type": "weight 5"},
-    {
-        "p_id": 2,
-        "p_name": "filet crochet flower",
-        "yarn_type": "crochet thread size 20",
-    },
-    {"p_id": 3, "p_name": "filet crochet sampler", "yarn_type": "tenncel weight 2"},
-]
-
-
 @app.get("/", include_in_schema=False)
 def home():
     return {"message": "You have reached the landing page"}
 
 
 @app.get("/project")
-def get_all(db: Session = Depends(get_db)):
-    return db.query(DB_Project).all()
+def get_all(request: Request, db: Session = Depends(get_db)):
+    projects = db.query(DB_Project).all()
+    return template.TemplateResponse(
+        "index.html", {"request": request, "projects": projects}
+    )
 
 
 @app.get("/project/get/{id}")

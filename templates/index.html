@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Projects</title>
+    <h1>All Projects</h1>
+</head>
+<body>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Yarn Type</th>
+        </tr>
+        {%for p in projects%}
+        <tr>
+            <td>{{p.id}}</td>
+            <td>{{p.name}}</td>
+            <td>{{p.yarn_type}}</td>
+        </tr>
+        {%endfor%}
+    </table>
+</body>
+</html>
