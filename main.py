@@ -27,8 +27,10 @@ class Project(BaseModel):  # pydantic model for api and db
 
 
 @app.get("/", include_in_schema=False)
-def home():
-    return {"message": "You have reached the landing page"}
+def home(request: Request):
+    return template.TemplateResponse(
+        "home.html", {"request": request, "message": "Hi, This is StitchMarker"}
+    )
 
 
 @app.get("/project")
@@ -40,11 +42,14 @@ def get_all(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/project/get/{id}")
-def get_route(id: int, db: Session = Depends(get_db)):
+def get_route(request: Request, id: int, db: Session = Depends(get_db)):
     project = db.query(DB_Project).filter(DB_Project.id == id).first()
+
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return project
+    return template.TemplateResponse(
+        "get_template.html", {"request": request, "project": project}
+    )
 
 
 @app.post("/projects/add/")
