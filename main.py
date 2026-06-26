@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, Form, HTTPException, Request
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
@@ -33,26 +34,12 @@ def home(request: Request):
     )
 
 
-@app.get("/project")
-def get_all(request: Request, db: Session = Depends(get_db)):
-    projects = db.query(DB_Project).all()
-    return template.TemplateResponse(
-        "index.html", {"request": request, "projects": projects}
-    )
+@app.get("/projects/get_form")
+def get_form(request: Request):
+    return template.TemplateResponse("form.html", {"request": request})
 
 
-@app.get("/project/get/{id}")
-def get_route(request: Request, id: int, db: Session = Depends(get_db)):
-    project = db.query(DB_Project).filter(DB_Project.id == id).first()
-
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return template.TemplateResponse(
-        "get_template.html", {"request": request, "project": project}
-    )
-
-
-@app.post("/projects/add/")
+@app.post("/api/projects/add/")
 def add_route(project: Project, db: Session = Depends(get_db)):
 
     if db.query(DB_Project).filter(DB_Project.name == project.name).first():
@@ -65,11 +52,52 @@ def add_route(project: Project, db: Session = Depends(get_db)):
         return new_project
 
 
+@app.post("/projects/add/")
+def post_form(
+    db: Session = Depends(get_db),
+    p_number: int = Form(...),
+    p_name: str = Form(...),
+    yarn: str = Form(...),
+):
+
+    if (
+        db.query(DB_Project).filter(DB_Project.name == p_name).first()
+        or db.query(DB_Project).filter(DB_Project.id == p_number).first()
+    ):
+        raise HTTPException(status_code=404, detail="project alrady exists")
+    else:
+        project = DB_Project(id=p_number, name=p_name, yarn_type=yarn)
+        db.add(project)
+        db.commit()
+        db.refresh(project)
+
+    return RedirectResponse(url="/projects/get", status_code=303)
+
+
+@app.get("/projects/get")
+def get_all(request: Request, db: Session = Depends(get_db)):
+    projects = db.query(DB_Project).all()
+    return template.TemplateResponse(
+        "index.html", {"request": request, "projects": projects}
+    )
+
+
+@app.get("/api/project/get/{id}")
+def get_route(request: Request, id: int, db: Session = Depends(get_db)):
+    project = db.query(DB_Project).filter(DB_Project.id == id).first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return template.TemplateResponse(
+        "get_template.html", {"request": request, "project": project}
+    )
+
+
 """@app.delete("/projects/delete/{id}")
 def delete_route(id: int):
     for i, p in enumerate(
         projects
-    ):  # enumerate gives the index as well as the contents in this case the dictinary sotred in i and p respectively
+    ):  # enumerate gives the index as well as the contents in this case the dictinary sorted in i and p respectively
         if p["p_id"] == id:
             projects.pop(i)
             return projects
@@ -98,7 +126,7 @@ def update_route(id: int, project=Project, db: Session = Depends(get_db)):
         return existing
 
 
-@app.delete("/projects/delete/{id}")
+@app.delete("/api/projects/delete/{id}")
 def delete_route(id: int, project=Project, db: Session = Depends(get_db)):
     del_proj = db.query(DB_Project).filter(DB_Project.id == id).first()
 
@@ -106,3 +134,14 @@ def delete_route(id: int, project=Project, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Project does not exist")
     db.delete(del_proj)
     db.commit()
+
+
+@app.post("/projects/delete/{id}")
+def delete_route(id: int, db: Session = Depends(get_db)):
+    del_proj = db.query(DB_Project).filter(DB_Project.id == id).first()
+
+    if not del_proj:
+        raise HTTPException(status_code=404, detail="Project does not exist")
+    db.delete(del_proj)
+    db.commit()
+    return RedirectResponse(url="/projects/get", status_code=303)
