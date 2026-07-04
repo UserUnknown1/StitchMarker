@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=<1.0>">
+    <title>Document</title>
+</head>
+<body>
+    {%if error %}
+     <p style="color: red;">{{ error }}</p>
+     {%endif%}
+     <form action="/projects/update/{{project.id}}" method="post">
+        <label>Update Project</label>
+        <br><br>
+        <label>Project Number: </label>
+        <input type="number", value={{project.id}} readonly>
+        <br><br>
+        <label>Project Name</label>
+        <input type="text" name="p_name" value={{project.name}}>
+        <br><br>
+        <label>Yarn Type</label>
+        <input type="text" name="yarn" value={{project.yarn_type}}>
+        <br><br>
+        <button type="submit"> Update </button>
+        <div>
+            <a href="/projects/get">
+                <button>Cancel</button>
+            </a>
+        </div>
+    </form>
+    <div><a href="/">
+            <button>Back to Home</button>
+        </a>
+
+    </div>
+</body>
+</html>

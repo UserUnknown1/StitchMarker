@@ -1,3 +1,4 @@
+from databaseconn import Base, engine, get_db
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -5,15 +6,13 @@ from pydantic import BaseModel
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import Session
 
-from project.databaseconn import Base, engine, get_db
-
 app = FastAPI(title="My Crochet Tracker")
-template = Jinja2Templates(directory="project//templates")
+template = Jinja2Templates(directory="templates")
 
 
 class DB_Project(Base):  # database model
     __tablename__ = "Crochet Projects"
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, index=True, primary_key=True)
     name = Column(String, nullable=False)
     yarn_type = Column(String)
 
@@ -54,6 +53,7 @@ def add_route(project: Project, db: Session = Depends(get_db)):
 
 @app.post("/projects/add/")
 def post_form(
+    request: Request,
     db: Session = Depends(get_db),
     p_number: int = Form(...),
     p_name: str = Form(...),
@@ -64,7 +64,9 @@ def post_form(
         db.query(DB_Project).filter(DB_Project.name == p_name).first()
         or db.query(DB_Project).filter(DB_Project.id == p_number).first()
     ):
-        raise HTTPException(status_code=404, detail="project alrady exists")
+        return template.TemplateResponse(
+            "form.html", {"request": request, "error": "Duplicate project exists"}
+        )
     else:
         project = DB_Project(id=p_number, name=p_name, yarn_type=yarn)
         db.add(project)
@@ -105,7 +107,48 @@ def delete_route(id: int):
     raise HTTPException(status_code=404, detail="Project does not exist")"""
 
 
-@app.put("/projects/update/{p_id}")
+@app.get("/projects/update/{id}")
+def update(request: Request, id: int, db: Session = Depends(get_db)):
+    project = db.query(DB_Project).filter(DB_Project.id == id).first()
+    return template.TemplateResponse(
+        "update.html", {"request": request, "project": project}
+    )
+
+
+@app.post("/projects/update/{id}")
+def post_form(
+    request: Request,
+    id: int,
+    p_name: str = Form(...),
+    yarn: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    dupe = (
+        db.query(DB_Project)
+        .filter(DB_Project.id != id, DB_Project.name == p_name)
+        .first()
+    )
+    if dupe:
+        return template.TemplateResponse(
+            "update.html",
+            {
+                "request": request,
+                "project": dupe,
+                "error": "Duplicate Project exists",
+            },
+        )
+
+    else:
+
+        project = db.query(DB_Project).filter(DB_Project.id == id).first()
+        project.name = p_name
+        project.yarn_type = yarn
+
+        db.commit()
+        return RedirectResponse(url="/projects/get", status_code=303)
+
+
+@app.put("/api/projects/update/{id}")
 def update_route(id: int, project=Project, db: Session = Depends(get_db)):
 
     existing = db.query(DB_Project).filter(DB_Project.id == id).first()

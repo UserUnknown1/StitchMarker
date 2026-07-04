@@ -6,6 +6,9 @@
     <title></title>
 </head>
 <body>
+    {%if error %}
+     <p style="color: red;">{{ error }}</p>
+     {%endif%}
     <form action="/projects/add/" method="post">
         <label>Add Project</label>
         <br><br>
@@ -19,7 +22,11 @@
         <input type="text" name="yarn">
         <br><br>
         <button type="submit"> Add </button>
+        <a href="/projects/get">
+                <button>Cancel</button>
+            </a>
 
     </form>
+    
 </body>
 </html>

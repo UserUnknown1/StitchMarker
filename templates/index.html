@@ -20,6 +20,9 @@
             <td>{{p.name}}</td>
             <td>{{p.yarn_type}}</td>
             <td>
+                <a href="/projects/update/{{ p.id }}">
+            <button type="button">Update</button>
+        </a>
                 <form action="/projects/delete/{{p.id}}"  method="post">
                     <button type="submit"> Delete </button>
 
@@ -27,6 +30,14 @@
         </tr>
         {%endfor%}
     </table>
+    <div>
+        <form action="/projects/get_form/" method="get">
+        <button type="submit">Add More</button>
+        </form>
+        <a href="/">
+            <button>Back to Home</button>
+        </a>
+    </div>
     
 </body>
 </html>
